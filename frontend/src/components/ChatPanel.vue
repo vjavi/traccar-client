@@ -17,7 +17,7 @@
       :class="[
         'flex flex-col bg-dark-100',
         isExpanded 
-          ? 'fixed inset-4 md:inset-8 lg:inset-16 xl:inset-24 rounded-2xl shadow-2xl border border-white/10 animate-expand' 
+          ? 'fixed inset-0 md:inset-4 lg:inset-8 xl:inset-16 md:rounded-2xl shadow-2xl md:border border-white/10 animate-expand' 
           : 'h-full'
       ]"
       :style="isExpanded ? 'z-index: 9999;' : ''"
@@ -25,9 +25,45 @@
     >
     <!-- Header -->
     <div :class="['border-b border-white/10', isExpanded ? 'px-6 py-4' : 'p-4']">
-      <!-- Expanded header - horizontal layout -->
+      <!-- Expanded header - responsive layout -->
       <div v-if="isExpanded" class="max-w-3xl mx-auto">
-        <div class="flex items-center justify-between">
+        <!-- Mobile expanded header -->
+        <div class="md:hidden">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                </svg>
+              </div>
+              <div>
+                <h3 class="font-display font-bold text-lg text-white">AutoAssist IA</h3>
+                <p class="text-xs text-slate-400">{{ selectedDeviceName || 'Sin dispositivo' }}</p>
+              </div>
+            </div>
+            <button
+              @click="toggleExpanded"
+              class="p-2 hover:bg-white/10 rounded-xl transition-colors"
+            >
+              <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+          <select
+            v-model="hoursOfData"
+            class="w-full bg-dark-200/50 border border-white/10 rounded-xl px-4 py-2 text-white text-sm"
+          >
+            <option :value="1">Última hora</option>
+            <option :value="6">Últimas 6h</option>
+            <option :value="24">Últimas 24h</option>
+            <option :value="48">Últimos 2 días</option>
+            <option :value="168">Última semana</option>
+          </select>
+        </div>
+        
+        <!-- Desktop expanded header -->
+        <div class="hidden md:flex items-center justify-between">
           <div class="flex items-center gap-4">
             <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/20">
               <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
