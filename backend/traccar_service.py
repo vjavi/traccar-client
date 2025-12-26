@@ -37,7 +37,7 @@ class TraccarService:
         self._cookies = response.cookies
         return response.json()
     
-    def _request(self, method: str, endpoint: str, params: dict = None, json: dict = None):
+    def _request(self, method: str, endpoint: str, params: dict = None, json: dict = None, headers: dict = None):
         """Realiza una petición HTTP a la API de Traccar"""
         # Asegurar que estamos autenticados
         self._authenticate()
@@ -48,6 +48,7 @@ class TraccarService:
             url=url,
             params=params,
             json=json,
+            headers=headers,
             timeout=self.timeout
         )
         response.raise_for_status()
@@ -58,8 +59,9 @@ class TraccarService:
         
         try:
             return response.json()
-        except Exception:
-            # Si la respuesta no es JSON válido, devolver lista vacía o None
+        except Exception as e:
+            # Si la respuesta no es JSON válido, loguear y devolver lista vacía
+            print(f"Warning: Non-JSON response from {endpoint}: {response.text[:200] if response.text else 'empty'}")
             return []
     
     def verify_connection(self) -> dict:
@@ -117,7 +119,8 @@ class TraccarService:
             params["from"] = from_time.strftime("%Y-%m-%dT%H:%M:%SZ")
         if to_time:
             params["to"] = to_time.strftime("%Y-%m-%dT%H:%M:%SZ")
-        return self._request("GET", "/reports/events", params=params if params else None)
+        # Traccar devuelve Excel por defecto para reportes, necesitamos JSON
+        return self._request("GET", "/reports/events", params=params if params else None, headers={"Accept": "application/json"})
     
     def get_trips(
         self,
@@ -131,7 +134,8 @@ class TraccarService:
             "from": from_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
             "to": to_time.strftime("%Y-%m-%dT%H:%M:%SZ")
         }
-        return self._request("GET", "/reports/trips", params=params)
+        # Traccar devuelve Excel por defecto, necesitamos JSON
+        return self._request("GET", "/reports/trips", params=params, headers={"Accept": "application/json"})
     
     def get_route(
         self,
@@ -145,4 +149,5 @@ class TraccarService:
             "from": from_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
             "to": to_time.strftime("%Y-%m-%dT%H:%M:%SZ")
         }
-        return self._request("GET", "/reports/route", params=params)
+        # Traccar devuelve Excel por defecto, necesitamos JSON
+        return self._request("GET", "/reports/route", params=params, headers={"Accept": "application/json"})

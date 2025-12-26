@@ -322,9 +322,16 @@ async def chat(
         
         try:
             trips = service.get_trips(request.device_id, from_time, to_time)
-            print(f"Got {len(trips)} trips")
+            if trips:
+                print(f"Got {len(trips)} trips")
+                for i, trip in enumerate(trips[:3]):  # Log primeros 3
+                    print(f"  Trip {i+1}: {trip.get('startTime')} -> {trip.get('endTime')}, {trip.get('distance', 0)/1000:.1f}km")
+            else:
+                print(f"No trips returned (trips={trips})")
         except Exception as e:
             print(f"Error getting trips for chat: {e}")
+            import traceback
+            traceback.print_exc()
         
         # Convertir historial de conversación al formato esperado
         conversation_history = [
