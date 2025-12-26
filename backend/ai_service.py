@@ -4,10 +4,14 @@ Servicio de IA para chat con el vehículo usando OpenAI
 import os
 from openai import OpenAI
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# Zona horaria por defecto (Chile/Argentina = UTC-3)
+# Puedes cambiar esto según tu ubicación
+LOCAL_TIMEZONE_OFFSET = -3  # horas respecto a UTC
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
@@ -41,12 +45,18 @@ def knots_to_kmh(knots: float) -> float:
 
 
 def format_datetime(iso_string: str) -> str:
-    """Formatea fecha ISO a formato legible"""
+    """Formatea fecha ISO a formato legible en zona horaria local"""
     if not iso_string or iso_string == 'N/A':
         return 'N/A'
     try:
+        # Parsear como UTC
         dt = datetime.fromisoformat(iso_string.replace('Z', '+00:00'))
-        return dt.strftime('%d/%m/%Y %H:%M')
+        
+        # Convertir a zona horaria local
+        local_tz = timezone(timedelta(hours=LOCAL_TIMEZONE_OFFSET))
+        dt_local = dt.astimezone(local_tz)
+        
+        return dt_local.strftime('%d/%m/%Y %H:%M')
     except:
         return iso_string
 
