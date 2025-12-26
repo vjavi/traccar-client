@@ -112,6 +112,7 @@
             v-else-if="activeTab === 'chat'"
             :selected-device="selectedDevice"
             :devices="devices"
+            @select-device="selectDevice"
           />
           <DebugPanel
             v-else-if="activeTab === 'debug'"
@@ -215,6 +216,7 @@
               v-else-if="activeTab === 'chat'"
               :selected-device="selectedDevice"
               :devices="devices"
+              @select-device="selectDevice"
             />
             <DebugPanel
               v-else-if="activeTab === 'debug'"

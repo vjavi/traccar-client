@@ -38,7 +38,6 @@
               </div>
               <div>
                 <h3 class="font-display font-bold text-lg text-white">AutoAssist IA</h3>
-                <p class="text-xs text-slate-400">{{ selectedDeviceName || 'Sin dispositivo' }}</p>
               </div>
             </div>
             <button
@@ -50,6 +49,18 @@
               </svg>
             </button>
           </div>
+          <!-- Device selector (mobile expanded) -->
+          <select
+            :value="currentDeviceId || ''"
+            @change="onDeviceChange(Number($event.target.value))"
+            class="w-full bg-dark-200/50 border border-white/10 rounded-xl px-4 py-2 text-white text-sm mb-2"
+          >
+            <option value="" disabled>Seleccionar vehículo...</option>
+            <option v-for="device in devices" :key="device.id" :value="device.id">
+              {{ device.name }}
+            </option>
+          </select>
+          <!-- Time selector (mobile expanded) -->
           <select
             v-model="hoursOfData"
             class="w-full bg-dark-200/50 border border-white/10 rounded-xl px-4 py-2 text-white text-sm"
@@ -76,12 +87,18 @@
             </div>
           </div>
           
-          <div class="flex items-center gap-4">
-            <!-- Device indicator (expanded) -->
-            <div v-if="selectedDeviceName" class="bg-dark-200/50 rounded-xl px-4 py-2 flex items-center gap-2">
-              <div class="w-2 h-2 bg-traccar-400 rounded-full animate-pulse"></div>
-              <span class="text-sm text-slate-300 font-medium">{{ selectedDeviceName }}</span>
-            </div>
+          <div class="flex items-center gap-3">
+            <!-- Device selector (expanded) -->
+            <select
+              :value="currentDeviceId || ''"
+              @change="onDeviceChange(Number($event.target.value))"
+              class="bg-dark-200/50 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 max-w-[200px]"
+            >
+              <option value="" disabled>Seleccionar vehículo...</option>
+              <option v-for="device in devices" :key="device.id" :value="device.id">
+                {{ device.name }}
+              </option>
+            </select>
             
             <!-- Time selector (expanded) -->
             <select
@@ -137,13 +154,19 @@
           </button>
         </div>
 
-        <!-- Device indicator (compact) -->
-        <div v-if="selectedDeviceName" class="bg-dark-200/50 rounded-xl p-3 flex items-center gap-2">
-          <div class="w-2 h-2 bg-traccar-400 rounded-full"></div>
-          <span class="text-sm text-slate-300">{{ selectedDeviceName }}</span>
-        </div>
-        <div v-else class="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3">
-          <p class="text-yellow-400 text-sm">Selecciona un dispositivo para chatear</p>
+        <!-- Device selector (compact) -->
+        <div class="mb-3">
+          <label class="block text-xs text-slate-400 mb-1">Vehículo:</label>
+          <select
+            :value="currentDeviceId || ''"
+            @change="onDeviceChange(Number($event.target.value))"
+            class="w-full bg-dark-200/50 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+          >
+            <option value="" disabled>Seleccionar vehículo...</option>
+            <option v-for="device in devices" :key="device.id" :value="device.id">
+              {{ device.name }}
+            </option>
+          </select>
         </div>
 
         <!-- Time range selector (compact) -->
@@ -304,6 +327,8 @@ const props = defineProps({
   }
 })
 
+const emit = defineEmits(['select-device'])
+
 const messagesContainer = ref(null)
 const messages = ref([])
 const inputMessage = ref('')
@@ -312,6 +337,22 @@ const error = ref('')
 const hoursOfData = ref(24)
 const dataSummary = ref(null)
 const isExpanded = ref(false)
+const localSelectedDevice = ref(props.selectedDevice)
+
+// Sync local device with prop
+watch(() => props.selectedDevice, (newVal) => {
+  localSelectedDevice.value = newVal
+})
+
+// Emit when local device changes
+function onDeviceChange(deviceId) {
+  localSelectedDevice.value = deviceId
+  emit('select-device', deviceId)
+  // Reset chat when device changes
+  messages.value = []
+  error.value = ''
+  dataSummary.value = null
+}
 
 function toggleExpanded() {
   isExpanded.value = !isExpanded.value
@@ -343,16 +384,12 @@ const suggestions = [
 ]
 
 const selectedDeviceName = computed(() => {
-  const device = props.devices.find(d => d.id === props.selectedDevice)
+  const device = props.devices.find(d => d.id === localSelectedDevice.value)
   return device?.name || null
 })
 
-// Reset chat when device changes
-watch(() => props.selectedDevice, () => {
-  messages.value = []
-  error.value = ''
-  dataSummary.value = null
-})
+// Computed para el dispositivo actual (usar local si existe, sino el prop)
+const currentDeviceId = computed(() => localSelectedDevice.value || props.selectedDevice)
 
 function scrollToBottom() {
   nextTick(() => {
@@ -394,7 +431,7 @@ function sendSuggestion(suggestion) {
 }
 
 async function sendMessage() {
-  if (!inputMessage.value.trim() || !props.selectedDevice || loading.value) return
+  if (!inputMessage.value.trim() || !currentDeviceId.value || loading.value) return
 
   const userMessage = inputMessage.value.trim()
   inputMessage.value = ''
@@ -417,7 +454,7 @@ async function sendMessage() {
     }))
 
     const response = await chatApi.send(
-      props.selectedDevice,
+      currentDeviceId.value,
       userMessage,
       hoursOfData.value,
       conversationHistory
