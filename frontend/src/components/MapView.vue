@@ -4,6 +4,25 @@
     
     <!-- Map controls -->
     <div class="absolute bottom-6 right-6 flex flex-col gap-2 z-[1000]">
+      <!-- Theme toggle -->
+      <button 
+        @click="toggleMapTheme"
+        class="p-3 bg-dark-100/90 backdrop-blur-lg rounded-xl border border-white/10 text-slate-400 hover:text-white hover:bg-dark-100 transition-all shadow-lg"
+        :title="`Cambiar estilo del mapa (actual: ${themeLabels[currentTheme]})`"
+      >
+        <!-- Moon icon (dark mode) -->
+        <svg v-if="currentTheme === 'dark'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+        </svg>
+        <!-- Sun icon (light mode) -->
+        <svg v-else-if="currentTheme === 'light'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+        </svg>
+        <!-- Map/Color icon (voyager mode) -->
+        <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path>
+        </svg>
+      </button>
       <button 
         @click="fitAllMarkers"
         class="p-3 bg-dark-100/90 backdrop-blur-lg rounded-xl border border-white/10 text-slate-400 hover:text-white hover:bg-dark-100 transition-all shadow-lg"
@@ -53,9 +72,23 @@ const props = defineProps({
 const emit = defineEmits(['select-device', 'clear-route'])
 
 const mapContainer = ref(null)
+const currentTheme = ref('dark')
 let map = null
 let markers = {}
 let routeLayer = null
+let tileLayer = null
+
+const themes = ['dark', 'light', 'voyager']
+const themeLabels = {
+  dark: 'Oscuro',
+  light: 'Claro', 
+  voyager: 'Color'
+}
+const tileLayers = {
+  dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+  light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+  voyager: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
+}
 
 // Custom icon
 function createIcon(isOnline, isSelected) {
@@ -97,8 +130,8 @@ function initMap() {
     zoomControl: false
   })
 
-  // Dark tile layer
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  // Initial tile layer (dark mode)
+  tileLayer = L.tileLayer(tileLayers.dark, {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
     subdomains: 'abcd',
     maxZoom: 20
@@ -221,6 +254,25 @@ function fitAllMarkers() {
     props.positions.map(p => [p.latitude, p.longitude])
   )
   map.fitBounds(bounds, { padding: [50, 50] })
+}
+
+function toggleMapTheme() {
+  // Cycle through themes: dark -> light -> voyager -> dark
+  const currentIndex = themes.indexOf(currentTheme.value)
+  const nextIndex = (currentIndex + 1) % themes.length
+  currentTheme.value = themes[nextIndex]
+  
+  // Remove current tile layer
+  if (tileLayer) {
+    map.removeLayer(tileLayer)
+  }
+  
+  // Add new tile layer
+  tileLayer = L.tileLayer(tileLayers[currentTheme.value], {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 20
+  }).addTo(map)
 }
 
 function centerOnDevice(deviceId) {
